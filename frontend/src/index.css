@@ -1,0 +1,201 @@
+@import "tailwindcss";
+
+@theme{
+  --color-primary: #000000;
+  --color-foreground: #09090BCC;
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717A;
+}
+
+*{
+  font-family: "Inter", sans-serif;
+  border-color: hsl(240,5.9%,90%);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.container{
+  width: 100%;
+  max-width: 1300px;
+  margin-inline: auto;
+  padding-inline: 35px;
+}
+
+.btn{
+  padding-block: 6px;
+}
+
+.btn-1{
+  color: #ffffff;
+  font-weight: 500;
+  background-color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+}
+
+.btn-2{
+  font-weight: 500;
+  background-color: #ffffff;
+  border: 2px solid var(--color-primary);
+}
+
+/* Editor Styles*/
+
+.tiptap{
+  padding: 10px 15px;
+  min-height: 500px;
+  border: 1px solid hsl(240,5.9%,90%);
+  border-radius: 4px;
+}
+
+.tiptap:focus{
+  border: 1px solid #000000;
+  outline: none;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: var(--color-muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap a{
+  color: var(--color-muted-foreground);
+  text-decoration: underline;
+}
+
+
+
+.tiptap img.ProseMirror-selectednode{
+  opacity: 60%;
+}
+
+.tiptap, .post-content{
+  h1,h2,h3,h4,h5,h6 {
+    font-weight: 700;
+    padding-block: 10px;
+  }
+
+  h1{
+    font-size: 2rem;
+  }
+
+  h2{
+    font-size: 1.8rem;
+  }
+
+  h3{
+    font-size: 1.5rem;
+  }
+
+  h4{
+    font-size: 1.25rem;
+  }
+
+  h5{
+    font-size: 1.15rem;
+  }
+
+  h6{
+    font-size: 1rem;
+  }
+  
+  ul{
+    list-style-type: disc;
+    list-style-position: outside;
+    padding-left: 1.5em;
+  }
+  
+  ol p{
+    display: inline-block;
+  }
+  
+  ol{
+    list-style-type: decimal;
+    list-style-position: outside;
+    padding-left: 1.5em;
+  }
+
+  ul[data-type='taskList']{
+    list-style: none;
+  }
+  
+  ul[data-type='taskList'] li{
+    display: flex;
+    gap: 5px;
+  }
+  
+  ul[data-type='taskList'] li label{
+    padding-top: 1px;
+  }
+  
+  blockquote{
+    border-left: 5px solid;
+    margin-block: 10px;
+    padding: 4px 10px 6px;
+  }
+  
+  pre{
+    background-color: #00000020;
+    padding: 20px;
+    margin: 10px 0;
+    border-radius: 5px;
+  }
+ 
+  img{
+    width: 100%;
+    margin-block: 20px;
+  }
+}
+
+.post-content{
+  color: #374451;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.post-content :is(h1,h2,h3,h4,h5,h6,b,strong){
+  color: #000000;
+}
+
+.post-content p{
+  padding-block: 5px;
+}
+
+.collaboration-cursor__caret{
+  position: relative;
+  border-right: 2px solid;
+}
+
+.collaboration-cursor__label{
+  width: max-content;
+  padding: 0 6px;
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+} 
+
+.is-active{
+  background-color: rgb(230,230,231);
+}
+
+
+@media screen and (max-width: 1200px) {
+  .container{
+    padding-inline: 25px;  
+  }
+
+}
+
+@media screen and (max-width: 500px) {
+  .container{
+    padding-inline: 15px;
+  }
+
+}
