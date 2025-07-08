@@ -292,19 +292,19 @@ export const updateProfile = async (req, res) => {
       req.userId,
       {
         $set: {
-          ...(req.body.firstname || req.body.lastname) && {
+          ...(firstname || lastname) && {
             fullname: {
-              ...(req.body.firstname) && { firstname },
-              ...(req.body.lastname) && { lastname },
+              ...(firstname) && { firstname },
+              ...(lastname) && { lastname },
             }
           },
-          ...(req.body.email) && { email },
-          ...(req.body.bio) && { bio },
-          ...(req.body.website) && { website },
-          ...(req.body.location) && { location },
-          ...(req.body.twitter) && { twitter },
-          ...(req.body.github) && { github },
-          ...(req.body.location) && { location }
+          ...(email) && { email },
+          ...(bio) && { bio },
+          ...(website) && { website },
+          ...(location) && { location },
+          ...(twitter) && { twitter },
+          ...(github) && { github },
+          ...(location) && { location }
         }
       },
       { 

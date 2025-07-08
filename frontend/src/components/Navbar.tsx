@@ -9,7 +9,23 @@ export default function Navbar (){
   const dispatch = useDispatch();
 
   const [menuOpen,setMenuOpen] = useState(false);
+  const [searchBarOpen, setSearchBarOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+
   const {profile} = useSelector(state => state.user);
+
+  async function handleSearchBarOpen(){
+    if(!searchBarOpen){
+      setSearchBarOpen(curr => !curr);
+      return;
+    }
+
+    if(searchInput !== ''){
+      // Do Something
+    }
+    setSearchInput('');
+    setSearchBarOpen(false);
+  }
 
   async function handleLogout(){
     localStorage.removeItem('token');
@@ -34,14 +50,21 @@ export default function Navbar (){
         
         <div className="flex items-center">
           <div className="relative mr-4 flex items-center gap-2">
-            <button className="peer px-2 py-1 focus:absolute focus:right-0 focus:border-l hover:bg-gray-100">
+            <button 
+              className={`px-2 py-1 ${searchBarOpen ? 'absolute right-0 border-l' : ''} hover:bg-gray-100`}
+              onClick={handleSearchBarOpen}
+            >
               <Search size={18} />
             </button>
-            <input 
-              type="text"
-              className="py-1 px-3 hidden focus:block peer-focus:block border rounded" 
-              onMouseDown={(e) => {e.preventDefault()}}
-            />
+            {
+              searchBarOpen &&
+              <input 
+                type="text"
+                className="py-1 px-3 border rounded" 
+                value={searchInput}
+                onChange={(e) => {setSearchInput(e.target.value)}}
+              />
+            }
           </div>
           <div className="hidden sm:flex items-center">
             {

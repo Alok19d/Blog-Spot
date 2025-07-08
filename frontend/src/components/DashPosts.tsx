@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Ellipsis, Eye, SquarePen, Trash2 } from "lucide-react"
+import { useNavigate, Link } from "react-router-dom";
+import { Edit, Ellipsis, Eye, SquarePen, Trash2 } from "lucide-react"
 import axios from "axios";
 
-export default function DashPosts({userPosts, setUserPosts}) {
+export default function DashPosts({userPosts, setUserPosts, toast}) {
   
   const navigate = useNavigate();
 
@@ -39,24 +39,26 @@ export default function DashPosts({userPosts, setUserPosts}) {
   async function handleDeletePost(postId){
     try {
       const response = await axios.delete(
-        `${import.meta.env.VITE_BASE_URL}/post/delete-post/${postId}`,
+        `${import.meta.env.VITE_BASE_URL}/post/delete/${postId}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         }
       );
+      toast.success(response.data.message);
       setUserPosts((prev) => prev.filter((post)=> post._id !== postId));
     } catch (error) {
       console.log(error);
+      toast.error(
+        (axios.isAxiosError(error) && error.response?.data?.message) ||
+        "An error occurred while deleting the post."
+      );
     }
   }
 
   return (
     <div>
-      <div className="mb-5">
-        <input className="px-3 py-2 border rounded" placeholder="Search Posts..."/>
-      </div>
       <div className="p-6 border rounded">
         <h3 className="text-2xl font-semibold">Your Posts</h3>
         <p className="mb-6 text-sm text-muted-foreground">Manage and track your blog posts</p>
@@ -75,54 +77,36 @@ export default function DashPosts({userPosts, setUserPosts}) {
             {
               userPosts.map((post) => {
                 return(
-                  <tr className="border-b" key={post._id}>
+                  <tr className="border-b hover:bg-muted" key={post._id}>
                     <td className="p-4 capitalize">
-                      <p className="text-sm font-medium">{post.title}</p>
+                      <Link 
+                        to={`${post.status === 'draft' ? `/preview/${post._id}` : `/blog/${post.slug}`}`} 
+                        className="text-sm font-medium"
+                      >
+                        {post.title}
+                      </Link>
                     </td>
                     <td className="p-4 text-xs capitalize">
                       <span className={`px-2 font-semibold rounded ${post.status === 'published' ? "bg-green-100 text-green-800" : "bg-muted"}`}>{post.status}</span>
                     </td>
                     <td className="p-4 capitalize">
-                      <span className="px-2 text-xs font-semibold border rounded">{post.category}</span>
+                      <span className="px-2 text-xs font-semibold border rounded">{post.category.name}</span>
                     </td>
-                    <td className="p-4 text-sm">1,000</td>
+                    <td className="p-4 text-sm">{post.viewCount}</td>
                     <td className="p-4 text-sm">
                       {new Date(post.createdAt).toLocaleDateString('en-GB')}
                     </td>
-                    <td className="p-4 text-right">
-                      <button className="group relative h-8 w-8 flex items-center justify-center hover:bg-muted rounded">
-                        <Ellipsis size={18} />
-                        <div 
-                          className="min-w-32 p-1 absolute top-full right-0 z-10 bg-white text-sm border rounded hidden group-focus:block"
-                          onMouseDown={(e) => {e.preventDefault()}}
-                        >
-                          <p 
-                            className="px-2 py-1 flex gap-2 hover:bg-muted rounded"
-                            onClick={() => {
-                              navigate(`/blog/${post.slug}`)
-                            }}
-                          >
-                            <span><Eye size={16} /></span>
-                            View
-                          </p>
-                          <p 
-                            className="px-2 py-1 flex gap-2 hover:bg-muted rounded"
-                            onClick={() => {
-                              navigate(`/update-post/${post._id}`)
-                            }}
-                          >
-                            <span><SquarePen size={16} /></span>
-                            Edit
-                          </p>
-                          <p 
-                            className="px-2 py-1 flex gap-2 text-red-700 hover:bg-red-100 rounded"
-                            onClick={() => {handleDeletePost(post._id)}}
-                          >
-                            <span><Trash2 size={16} /></span>
-                            Delete
-                          </p>
-                        </div>
-                      </button>
+                    <td className="p-4 text-center">
+                      <div className="w-full flex items-center justify-start gap-3">
+                        <button onClick={() => {
+                            navigate(`/update-post/${post._id}`)
+                          }}>
+                          <Edit size={18} />
+                        </button>
+                        <button onClick={() => {handleDeletePost(post._id)}}>
+                          <Trash2 className="text-red-600" size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )

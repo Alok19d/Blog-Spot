@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TaskList from '@tiptap/extension-task-list';
@@ -15,6 +15,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { getHierarchicalIndexes, TableOfContents } from '@tiptap/extension-table-of-contents';
 import { TableOfContentDataItem } from '@tiptap/extension-table-of-contents';
 import axios from 'axios';
+
 import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import * as Y from 'yjs';
@@ -51,7 +52,9 @@ export default function useCustomEditor ({
   }
 
   const baseExtensions = [
-    StarterKit,
+    StarterKit.configure({
+      history: !roomId,
+    }),
     Underline,
     TaskList,
     TaskItem.configure({
@@ -137,7 +140,7 @@ export default function useCustomEditor ({
     TableOfContents.configure({
       getIndex: getHierarchicalIndexes,
       onUpdate(content) {
-        setItems(content)
+        setItems(content);
       },
     }),
   ];
@@ -165,6 +168,15 @@ export default function useCustomEditor ({
       setCharacterCount(characters);
     }
   });
+
+   useEffect(() => {
+    if (editor && initialContent !== undefined) {
+      const currentContent = editor.getHTML();
+      if (currentContent !== initialContent) {
+        editor.commands.setContent(initialContent);
+      }
+    }
+  }, [editor, initialContent]);
 
   // Cleanup function for Collaboration
   const cleanup = () => {

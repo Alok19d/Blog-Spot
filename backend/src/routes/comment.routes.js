@@ -12,5 +12,7 @@ router.put('/likeComment/:commentId', authUser, likeComment);
 
 router.put('/editComment/:commentId', authUser, editComment);
 
+// router.delete('/deleteComment/:commentId', authUser, deleteComment);
+
 
 export default router;

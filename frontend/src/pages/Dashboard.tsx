@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { CirclePlus } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faFileLines, faHeart, faComment } from "@fortawesome/free-regular-svg-icons";
-import { faCirclePlus } from "@fortawesome/free-solid-svg-icons";
 import DashPosts from "../components/DashPosts";
 import axios from "axios";
+import { toast, ToastContainer } from 'react-toastify';
 
 export default function Dashboard(){
 
@@ -13,42 +14,43 @@ export default function Dashboard(){
   
   const [tab, setTab] = useState('posts');
   const [userPosts, setUserPosts] = useState([]);
+  const [dashboardData, setDashboardData] = useState({});
 
-  const [dashboardData, setDashboardData] = useState({})
+  async function fetchDashboardData(){
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/post/dashboard`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      setDashboardData(response.data.data);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function fetchUserPosts(){
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/post/my-posts`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      setUserPosts(response.data.data.posts);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   useEffect(() => {
-    axios
-    .get(
-      `${import.meta.env.VITE_BASE_URL}/post/my-posts`,
-      {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    )
-    .then((response) => {
-      setUserPosts(response.data.data.posts);
-    })
-    .catch((error) => {
-      console.log(error);
-    });
-
-    axios
-    .get(
-      `${import.meta.env.VITE_BASE_URL}/post/dashboard`,
-      {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      }
-    )
-    .then((response) => {
-      setDashboardData(response.data.data);
-    })
-    .catch((error) => {
-      console.log(error);
-    });
-
+    fetchDashboardData();
+    fetchUserPosts();
   },[])
 
   return (
@@ -64,7 +66,7 @@ export default function Dashboard(){
                 <FontAwesomeIcon className="text-muted-foreground" icon={faEye}/>
               </div>
               <p className="font-bold text-2xl">{dashboardData?.totalViews}</p>
-              <p className="text-xs text-muted-foreground">+12.5% from last month</p>
+              <p className="text-xs text-muted-foreground">+{dashboardData?.viewsThisMonth} this month</p>
             </div>
             <div className="p-6 border rounded-md">
               <div className=" mb-2 flex justify-between">
@@ -110,6 +112,12 @@ export default function Dashboard(){
                 Comments
               </button>
               <button 
+                className={`px-2 py-1 rounded ${tab === 'likes' ? 'bg-white shadow-sm' : ''}`}
+                onClick={() => {setTab('likes')}}
+              >
+                Liked Posts
+              </button>
+              <button 
                 className={`px-2 py-1 rounded ${tab === 'bookmarks' ? 'bg-white shadow-sm' : ''}`}
                 onClick={() => {setTab('bookmarks')}}
               >
@@ -117,20 +125,20 @@ export default function Dashboard(){
               </button>
             </div>
             <div>
-              <Link to='/new-post' className="px-2 py-1 space-x-2 btn-1 rounded-md">
-                <FontAwesomeIcon icon={faCirclePlus} />
-                
+              <Link to='/new-post' className="px-3 py-1.5 space-x-2 flex items-center btn-1 rounded-md">
+                <CirclePlus size={18} />
                 <span>New Post</span>
               </Link>
             </div>
           </div>
           {
             tab === 'posts' ?
-            <DashPosts userPosts={userPosts} setUserPosts={setUserPosts} /> :
+            <DashPosts userPosts={userPosts} setUserPosts={setUserPosts} toast={toast} /> :
             <div></div>
           }
         </div>
       </section>
+      <ToastContainer />
     </main>
   )
 }

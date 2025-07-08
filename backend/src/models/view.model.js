@@ -7,7 +7,7 @@ const viewSchema = new mongoose.Schema(
       ref: 'Post',
       required: true
     },
-    view_count: {
+    viewCount: {
       type: Number,
       default: 0
     },
@@ -17,7 +17,7 @@ const viewSchema = new mongoose.Schema(
         ref: 'User'
       }
     ],
-    like_count: {
+    likeCount: {
       type: Number,
       default: 0
     }

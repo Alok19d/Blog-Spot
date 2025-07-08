@@ -206,11 +206,6 @@ export default function Room(){
               <h3 className="mb-6 text-2xl font-semibold">Content</h3>
               <EditorMenu editor={editor} />
               <EditorContent editor={editor} />
-              {/* <textarea 
-                ref={containerRef}
-                className="w-full h-[400px] p-2 text-sm border rounded" 
-                placeholder="Start writing your blog post..."
-              /> */}
             </div>
           </div>
 

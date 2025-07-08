@@ -37,6 +37,7 @@ interface IPost{
 export default function Preview(){
   
   const { postId } = useParams();
+
   const [postData, setPostData] = useState<IPost | null>(null);
   const [showShareLink, setShowShareLink] = useState(false);
 
@@ -80,11 +81,11 @@ export default function Preview(){
               <p className="text-xl text-muted-foreground mb-6">{postData?.excerpt}</p>
               <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                 <div className="flex items-center space-x-4">
-                  <span className="h-12 w-12 rounded-full">
+                  <span className="h-12 w-12 rounded-full overflow-hidden">
                     {
                       postData?.author.profileImg 
                       ?
-                      <img className="object-cover rounded-full" src={postData?.author.profileImg} alt='profile-img' />
+                      <img className="w-full h-full object-cover rounded-full" src={postData?.author.profileImg} alt='profile-img' />
                       :
                       <span className="w-full aspect-square flex items-center justify-center text-sm text-white font-bold capitalize bg-gray-700 rounded-full">{postData?.author.fullname.firstname[0]}</span>
                     }
@@ -127,7 +128,7 @@ export default function Preview(){
                   {
                     showShareLink &&
                     <div className="w-full p-2 space-y-2 absolute top-full right-0 bg-white border rounded">
-                      <p className="px-2 py-1 break-all bg-muted border rounded">
+                      <p className="px-2 py-1 break-all text-muted-foreground border rounded">
                         http://localhost:5173/blog/{postData?.slug}
                       </p>
                       <button className="w-full px-2 py-1 btn-1 rounded" onClick={ () => {CopyToClipboard(`http://localhost:5173/blog/${postData?.slug}`)}}>Copy to Clipboard</button>
@@ -137,10 +138,9 @@ export default function Preview(){
               </div>
               {
                 postData && postData?.coverImage !== '' &&
-                <img className="object-cover" src={postData.coverImage} />
+                <img className="w-full object-cover" src={postData.coverImage} />
               }
             </div>
-
             
             {/* Content */}
             {
@@ -155,7 +155,7 @@ export default function Preview(){
               <div className="flex flex-wrap gap-2 text-xs font-semibold">
                 {
                   postData?.tags.map((tag, i) => (
-                    <p key={i} className="px-2.5 py-0.5 bg-muted rounded">{tag.split('-').join(' ')}</p>
+                    <p key={i} className="px-2.5 py-0.5 capitalize bg-muted rounded">{tag.split('-').join(' ')}</p>
                   ))
                 }
               </div>

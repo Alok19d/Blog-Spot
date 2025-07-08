@@ -1,14 +1,30 @@
 import z from 'zod';
 import CommentModel from '../models/comment.model.js'
+import mongoose from 'mongoose';
 
 export const createComment = async (req, res) => {
   try{
-    const {content, postId} = req.body;
+    const commentSchema = z.object({
+      postId: z.string(),
+      parentCommentId: z.string().optional(),
+      content: z.string(),
+    })
 
+    const { postId, parentCommentId, content } = req.body;
+
+    /* Input Validation */
+    const validateInput = commentSchema.parse({
+      postId,
+      parentCommentId,
+      content
+    })
+
+    /* Creating Comment */
     const comment = await CommentModel
     .create({
       userId: req.userId,
       postId,
+      ... (parentCommentId) && {parentCommentId},
       content
     })
 
@@ -32,7 +48,7 @@ export const createComment = async (req, res) => {
       .status(400)
       .json({
         success: false,
-        message: "Input Validation Error",
+        message: error.errors[0]?.message || "Input Validation Error",
         error: error
       });
       return;
@@ -50,10 +66,40 @@ export const createComment = async (req, res) => {
 
 export const getPostComments = async (req, res) => {
   try {
-    const comments = await CommentModel
-    .find({postId: req.params.postId})
-    .populate('userId', 'fullname profileImg')
-    .sort({createdAt: -1});
+    const { postId } = req.params;
+
+    const comments = await CommentModel.aggregate([
+      { $match: { postId: new mongoose.Types.ObjectId(postId), parentCommentId: null } },
+      {
+        $lookup: {
+          from: 'comments',
+          localField: '_id',
+          foreignField: 'parentCommentId',
+          as: 'replies'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          content: 1,
+          createdAt: 1,
+          like_count: 1,
+          'user._id': 1,
+          'user.fullName': 1,
+          'user.profileImage': 1,
+          replies: 1
+        }
+      },
+      { $sort: { createdAt: -1 } }
+    ]);
 
     res
     .status(200)
@@ -65,6 +111,7 @@ export const getPostComments = async (req, res) => {
       message: "Comments Fetched successfully."
     });
   } catch (error) {
+    console.log(error);
     res
     .status(500)
     .json({

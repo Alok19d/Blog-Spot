@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import CategoryModel from '../models/category.model.js'
-import PostModel from '../models/post.model.js';
 
 export const createCategory = async (req, res) => {
   try {
@@ -86,52 +85,6 @@ export const getCategories = async (req, res) => {
       success: false,
       error,
       message: "Server error: Unable to fetch categories."
-    });
-  }
-}
-
-export const postCount = async (req, res) => {
-  try {
-    const counts = await PostModel.aggregate([
-      {
-        $group: {
-          _id: "$category",
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $lookup: {
-          from: "categories",
-          localField: "_id",
-          foreignField: "_id",
-          as: "category"
-        }
-      },
-      {
-        $unwind: "$category"
-      },
-      {
-        $project: {
-          _id: 0,
-          categoryId: "$category._id",
-          categoryName: "$category.name",
-          count: 1
-        }
-      }
-    ]);
-
-    res.status(200).json({
-      success: true,
-      data: counts,
-      message: "Post count by category fetched successfully."
-    });
-  } catch (error) {
-    res
-    .status(500)
-    .json({
-      success: false,
-      error,
-      message: "Server error: Unable to fetch post count by category."
     });
   }
 }

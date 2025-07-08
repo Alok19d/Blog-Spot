@@ -1,45 +1,256 @@
-import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import axios from 'axios';
-import { Bookmark, CalendarDays, Clock, Heart, MessageSquare, Share2 } from "lucide-react";
-import DomPurify from 'dompurify'
+import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
+import { useParams, useNavigate } from "react-router-dom";
+import { Bookmark, CalendarDays, Clock, Heart, MessageSquare, Share2 } from "lucide-react";
+import axios from 'axios';
+import DomPurify from 'dompurify';
+import {toast, ToastContainer} from 'react-toastify';
+
+interface IPost{
+  _id: string;
+  title: string;
+  excerpt: string;
+  coverImage?: string;
+  category: {
+    _id: string;
+    name: string;
+  }
+  tags: string[];
+  content: string;
+  slug: string;
+  tableOfContent?: {
+    id: string;
+    level: number;
+    textContent: string;
+  }[]
+  author: {
+    fullname: {
+      firstname: string;
+      lastname: string;
+    }
+    profileImg?: string;
+  }
+  readingTime: string;
+  status: "draft" | "published";
+  updatedAt: string;
+  viewCount?: number;
+  likeCount?: number;
+  commentCount?: number;
+}
+
+interface IComment{
+
+}
+
+interface IRelatedPosts{
+  _id: string;
+  title: string;
+  slug: string;
+  coverImage?: string;
+  readingTime: string;
+}
 
 export default function Blog(){
+
   const {postSlug} = useParams();
-  
-  const [postData, setPostData] = useState(null);
+  const navigate = useNavigate();
+
+  const initializeRef = useRef(false);
+
+  const [post, setPost] = useState<IPost | null>(null);
   const [like, setLike] = useState(false);
-  const [comments, setComments] = useState(null);
+  const [bookmark, setBookmark] = useState(false);
+  const [showShareLink, setShowShareLink] = useState(false);
   const [comment, setComment] = useState('');
-  
-  const {profile} = useSelector(state => state.user);
+  const [comments, setComments] = useState([]);
+  const [relatedPosts, setRelatedPosts] = useState<IRelatedPosts[]>([]);
+
+  const { profile } = useSelector(state => state.user);
+
+  async function fetchBookmarkStatus(){
+    if(!profile) return;
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/bookmark/status?postId=${post?._id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      setBookmark(response.data.data.isBookmarked);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function fetchViewsAndLikes(){
+    try {
+      let response;
+      if(profile){
+        response = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/view/status?postId=${post?._id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+      }
+      else{
+        response = await axios.get(`${import.meta.env.VITE_BASE_URL}/view/?postId=${post?._id}`);
+      }
+
+      setPost(curr => {
+        if (!curr) return curr;
+        return {
+          ...curr,
+          viewCount: response.data.data.views,
+          likeCount: response.data.data.likes
+        };
+      });
+      setLike(response.data.data.isLiked);
+    } catch (error) {
+      console.log(error);
+    }
+  } 
+
+  async function fetchComments(){
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/comment/getPostComments/${post?._id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      console.log(response.data.data.comments);
+      // setComments(response.data.data.comments);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function fetchRelatedPosts(){
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/post/related-posts?postId=${post?._id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      setRelatedPosts(response.data.data.posts);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   useEffect(() => {
-    axios
-    .get(
-      `${import.meta.env.VITE_BASE_URL}/post/post?slug=${postSlug}`
-    )
-    .then(async (repsonse) => {
-      if(repsonse.data.data.post){
-        console.log(repsonse.data.data);
-        setPostData(repsonse.data.data);
-        
-        const commentsResponse = await axios.get(`${import.meta.env.VITE_BASE_URL}/comment/getPostComments/${repsonse.data.data.post._id}`);
-        setComments(commentsResponse.data.data.comments);
-      }
-    })
-    .catch((error) => {
-      console.log(error);
-    })
-  },[postSlug])
+    if(!initializeRef.current){
+      initializeRef.current = true;
 
+      axios
+      .get(`${import.meta.env.VITE_BASE_URL}/post/post?slug=${postSlug}`)
+      .then(async (repsonse) => {
+        setPost(repsonse.data.data.post);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+    }
+  },[postSlug]);
+
+  useEffect(() => {
+    if(post?._id){
+      fetchBookmarkStatus();
+      fetchViewsAndLikes();
+      fetchComments();
+      fetchRelatedPosts();
+    }
+  },[post?._id]);
+
+  async function toggleBookmark(){
+    if(!profile){
+      return;
+    }
+
+    try {
+      const response = await axios.put(
+        `${import.meta.env.VITE_BASE_URL}/bookmark/toggle/${post?._id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if(response.data.data.isBookmarked){
+        toast.success('Post Bookmarked Successfully!');
+      }
+      else{
+        toast.success('Post Un-Bookmarked Successfully!');
+      }
+
+      setBookmark(response.data.data.isBookmarked);
+    } catch (error) {
+      console.log(error);
+      toast.error(
+        (axios.isAxiosError(error) && error.response?.data?.message) ||
+        "An error occurred while toggling bookmark."
+      );
+    }
+  }
+
+  async function toggleLikePost(){
+    if(!profile){
+      return;
+    }
+
+    try {
+      const response = await axios.put(
+        `${import.meta.env.VITE_BASE_URL}/view/toggleLike/${post?._id}`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      setPost(curr => {
+        if(!curr) return curr;
+        return {
+          ...curr, 
+          likeCount: response.data.data.likes
+        }
+      });
+      setLike(response.data.data.isLiked);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function CopyToClipboard(link: string){
+    try {
+      await navigator.clipboard.writeText(link);
+      setShowShareLink(false);
+      toast.success('Share Link Copied to Clipboard');
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  }
+
+  // Done
   async function postComment(){
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/comment/create`,
         {
-          postId: postData?.post._id,
+          postId: post?._id,
           content: comment
         },
         {
@@ -49,36 +260,14 @@ export default function Blog(){
         }
       );
       setComment('');
-      setComments(curr => [response.data.data.comment, ...curr]);
+      // setComments(curr => [response.data.data.comment, ...curr]);
       console.log(response.data.data.comment);
     } catch (error) {
       console.log(error);
     }
   }
 
-  async function likePost(postId) {
-    if(!profile){
-      return;
-    }
-
-    try {
-      const response = await axios.put(
-        `${import.meta.env.VITE_BASE_URL}/view/likePost/${postId}`,
-        {},
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-      
-      setLike(response.data.data.liked);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  async function likeComment(commentId) {
+  async function likeComment(commentId: string) {
     if(!profile){
       return;
     }
@@ -107,11 +296,11 @@ export default function Blog(){
     }
   }
 
-  async function editComment(commentId) {
+  async function editComment(commentId: string) {
     
   }
 
-  async function deleteComment(commentId) {
+  async function deleteComment(commentId: string) {
 
   }
 
@@ -121,42 +310,41 @@ export default function Blog(){
         <div className="px-4 py-8 container grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3 space-y-6">
             <div className="flex items-center space-x-2 mb-4">
-              <span className="px-2.5 py-0.5 bg-black text-white text-xs font-semibold capitalize rounded-xl">{postData?.post.category.name}</span>
-              <span className="text-sm text-muted-foreground">8 min read</span>
+              <span className="px-2.5 py-0.5 bg-black text-white text-xs font-semibold capitalize rounded-lg">{post?.category.name}</span>
             </div>
             <div className="mb-8">
-              <h1 className="mb-4 text-4xl md:text-5xl font-bold">{postData?.post.title}</h1>
-              <p className="text-xl text-muted-foreground mb-6">{postData?.post.excerpt}</p>
+              <h1 className="mb-4 text-4xl md:text-5xl font-bold">{post?.title}</h1>
+              <p className="text-xl text-muted-foreground mb-6">{post?.excerpt}</p>
               <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                 <div className="flex items-center space-x-4">
-                  <span className="h-12 w-12 rounded-full">
+                  <span className="h-12 w-12 rounded-full overflow-hidden">
                     {
-                      postData?.post.author.profileImg 
+                      post?.author.profileImg 
                       ?
-                      <img className="object-cover rounded-full" src={postData?.post.author.profileImg} alt='profile-img' />
+                      <img className="w-full h-full object-cover" src={post?.author.profileImg} alt='profile-img' />
                       :
-                      <span className="w-full aspect-square flex items-center justify-center text-sm text-white font-bold capitalize bg-gray-700 rounded-full">{postData?.post.author.fullname.firstname[0]}</span>
+                      <span className="w-full aspect-square flex items-center justify-center text-sm text-white font-bold capitalize bg-gray-700 rounded-full">{post?.author.fullname.firstname[0]}</span>
                     }
                   </span>
                   <div>
-                    <p className="font-medium">{postData?.post.author.fullname.firstname + ' ' + postData?.post.author.fullname.lastname}</p>
+                    <p className="font-medium">{post?.author.fullname.firstname + ' ' + post?.author.fullname.lastname}</p>
                     <div className="flex items-center text-muted-foreground text-sm space-x-2">
                       <CalendarDays size={16} />
                       <span>
                         {
-                          postData?.post &&
-                          new Intl.DateTimeFormat('en-US', {year: 'numeric', month: 'long', day: 'numeric'}).format(new Date(postData?.post.updatedAt))
+                          post &&
+                          new Intl.DateTimeFormat('en-US', {year: 'numeric', month: 'long', day: 'numeric'}).format(new Date(post?.updatedAt))
                         }
                       </span>
                       <Clock size={16} />
-                      <span>8 min read</span>
+                      <span>{post?.readingTime} read</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-cent space-x-2">
+                <div className="relative flex items-cent space-x-2">
                   <button 
                     className="h-9 px-3 space-x-2 flex items-center gap-2 text-sm font-medium border rounded-md hover:bg-muted"
-                    onClick={() => {likePost(postData?.post._id)}}
+                    onClick={toggleLikePost}
                   >
                     {
                       like ?
@@ -164,55 +352,79 @@ export default function Blog(){
                       :
                       <Heart size={16} />
                     }
-                    <span className="font-medium">{postData?.like_count}</span>
+                    <span className="font-medium">{post?.likeCount ?? 0}</span>
                   </button>
                   <button className="h-9 px-3 space-x-2 flex items-center gap-2 text-sm font-medium border rounded-md hover:bg-muted">
                     <MessageSquare size={16} />
-                    <span className="font-medium">{comments?.length}</span>
+                    <span className="font-medium">{post?.commentCount ?? 0}</span>
                   </button>
-                  <button className="h-9 px-3 space-x-2 flex items-center gap-2 text-sm font-medium border rounded-md hover:bg-muted">
-                    <Bookmark size={16} />
+                  <button className="h-9 px-3 space-x-2 flex items-center gap-2 text-sm font-medium border rounded-md hover:bg-muted" onClick={toggleBookmark}>
+                    {
+                      bookmark ?
+                      <Bookmark size={16} fill='black' />
+                      :
+                      <Bookmark size={16} />
+                    }
                   </button>
-                  <button className="h-9 px-3 space-x-2 flex items-center gap-2 text-sm font-medium border rounded-md hover:bg-muted">
+                  <button 
+                    className="h-9 px-3 space-x-2 flex items-center gap-2 text-sm font-medium border rounded-md hover:bg-muted"
+                    onClick={() => {setShowShareLink(curr => !curr)}}  
+                  >
                     <Share2 size={16} />
                   </button>
+                  {
+                    showShareLink &&
+                    <div className="w-full p-2 space-y-2 absolute top-full right-0 bg-white border rounded">
+                      <p className="px-2 py-1 break-all text-muted-foreground border rounded">
+                        http://localhost:5173/blog/{post?.slug}
+                      </p>
+                      <button className="w-full px-2 py-1 btn-1 rounded" onClick={ () => {CopyToClipboard(`http://localhost:5173/blog/${post?.slug}`)}}>Copy to Clipboard</button>
+                    </div>
+                  }
                 </div>
               </div>
               {
-                postData && postData?.post.coverImage !== '' &&
-                <img className="object-cover" src={postData.post.coverImage} />
+                post && post?.coverImage !== '' &&
+                <img className="w-full object-cover" src={post.coverImage} />
               }
             </div>
-            <div className="post-content" dangerouslySetInnerHTML={{__html: DomPurify.sanitize(postData?.post.content)}}>
-            </div>
 
+            {/* Content */}
+            {
+              post?.content &&
+              <div className="post-content" dangerouslySetInnerHTML={{__html: DomPurify.sanitize(post?.content)}}>
+              </div>
+            }
+
+            {/* Tags */}
             <div className="mt-8 p-6 border-t">
               <h3 className="font-semibold text-lg mb-4">Tags</h3>
               <div className="flex flex-wrap gap-2 text-xs font-semibold">
                 {
-                  postData?.post.tags.map((tag, i) => (
-                    <p key={i} className="px-2.5 py-0.5 bg-muted rounded">{tag}</p>
+                  post?.tags.map((tag, i) => (
+                    <p key={i} className="px-2.5 py-0.5 capitalize bg-muted rounded">{tag.split('-').join(' ')}</p>
                   ))
                 }
               </div>
             </div>
             
+            {/* Author Info */}
             <div className="border p-6 rounded">
               <div className="flex items-start space-x-4">
-                <div className="w-16 h-16">
-                  <span className="w-full h-full aspect-square bg-muted rounded-full">
+                <div className="w-16 h-16 rounded-full overflow-hidden">
+                  <span className="w-full h-full aspect-square bg-muted ">
                     {
-                      postData?.post.author.profileImg 
+                      post?.author.profileImg 
                       ?
-                      <img className="object-cover rounded-full" src={postData?.post.author.profileImg} alt='profile-img' />
+                      <img className="w-full h-full object-cover rounded-full" src={post?.author.profileImg} alt='profile-img' />
                       :
-                      <span className="w-full aspect-square flex items-center justify-center text-sm text-white font-bold capitalize bg-gray-700 rounded-full">{postData?.post.author.fullname.firstname[0]}</span>
+                      <span className="w-full aspect-square flex items-center justify-center text-sm text-white font-bold capitalize bg-gray-700 rounded-full">{post?.author.fullname.firstname[0]}</span>
                     }
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">About {postData?.post.author.fullname.firstname + ' ' + postData?.post.author.fullname.lastname}</h3>
-                  <p className="text-muted-foreground">{postData?.post.author.bio}</p>
+                  <h3 className="text-xl font-semibold mb-2">About {post?.author.fullname.firstname + ' ' + post?.author.fullname.lastname}</h3>
+                  <p className="text-muted-foreground">{post?.author.bio}</p>
                 </div>
               </div>
             </div>
@@ -250,7 +462,7 @@ export default function Blog(){
                   comments?.map((comment) => {
                     return (
                       <div key={comment._id} className="flex space-x-4">
-                        <div className="w-10 h-10 aspect-square bg-muted rounded-full">
+                        <div className="w-10 h-10 aspect-square bg-muted rounded-full overflow-hidden">
                           {
                             comment.userId.profileImg 
                             ?
@@ -315,30 +527,63 @@ export default function Blog(){
             {/* Table of Contents */}
             <div className="p-6 border rounded-lg">
               <h3 className="text-2xl font-semibold">Table of Contents</h3>
-              <div className="mt-4 text-sm space-y-2">
-                <p className="text-muted-foreground hover:text-black">1. AI-Powered Development Tools</p>
-                <p className="text-muted-foreground hover:text-black">2. The Rise of Edge Computing</p>
-                <p className="text-muted-foreground hover:text-black">3. Modern JavaScript Frameworks</p>
-                <p className="text-muted-foreground hover:text-black">4. Web Assembly Integration</p>
+              <div className="mt-4 text-sm">
+                {
+                  post?.tableOfContent?.length !== 0 && 
+                  <div className="flex flex-col space-y-2">
+                    {
+                      post?.tableOfContent?.map(elem => (
+                        <a 
+                          key={elem.id}
+                          href={`#${elem.id}`}
+                          className={`text-muted-foreground hover:text-black`}
+                          style={{ paddingLeft: `${elem.level * 16}px` }}
+                        >
+                          {elem.textContent}
+                        </a>
+                      ))
+                    }
+                  </div>
+                }
               </div>
             </div>
             
             {/* Related Articles */}
-            <div className="p-6 border rounded-lg">
-              <h3 className="text-2xl font-semibold">Related Articles</h3>
-              <div className="mt-4 space-y-2">
-                <div className="flex space-x-3">
-                  <div className="h-16 aspect-square bg-muted"></div>
-                  <div>
-                    <h4 className="text-sm font-medium">Building Scalable React Applications</h4>
-                    <p className="mt-1 text-xs text-muted-foreground"> 8 min read</p>
-                  </div>
+            {
+              relatedPosts?.length > 0 &&
+              <div className="p-6 border rounded-lg">
+                <h3 className="text-2xl font-semibold">Related Articles</h3>
+                <div className="mt-4 space-y-2">
+                  {
+                    relatedPosts.map((post) => (
+                      <div 
+                        key={post._id} 
+                        className="flex space-x-3 cursor-pointer" 
+                        onClick={() => {
+                          initializeRef.current = false; 
+                          navigate(`/blog/${post.slug}`)
+                        }}
+                      >
+                        <div className="w-16 h-16 aspect-square bg-muted">
+                          {
+                            post.coverImage &&
+                            <img className="w-full h-full object-cover overflow-hidden" src={post.coverImage} />
+                          }
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium">{post.title}</h4>
+                          <p className="mt-1 text-xs text-muted-foreground"> {post.readingTime} read</p>
+                        </div>
+                      </div>
+                    ))
+                  }
                 </div>
               </div>
-            </div>
+            }
           </div>
         </div>
       </section>
+      <ToastContainer />
     </main>
   )
 }

@@ -1,23 +1,52 @@
-import { useEffect, useState } from "react"
-import { useSelector } from "react-redux"
-import { useNavigate, useParams } from "react-router-dom"
-import { Info, Tag, UserRoundPen, X } from "lucide-react"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faImage } from "@fortawesome/free-regular-svg-icons"
-import axios from "axios"
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { ChevronRight, Info, Tag, UserRoundPen, X } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faImage } from "@fortawesome/free-regular-svg-icons";
+import axios from "axios";
 import { EditorContent } from "@tiptap/react";
 import { TableOfContentDataItem } from '@tiptap/extension-table-of-contents';
-import useCustomEditor from "../hooks/useCustomEditor"
-import EditorMenu from "../components/EditorMenu"
+import useCustomEditor from "../hooks/useCustomEditor";
+import EditorMenu from "../components/EditorMenu";
 import { TextSelection } from '@tiptap/pm/state';
-import { ToastContainer, toast } from 'react-toastify';
+import {toast, ToastContainer} from 'react-toastify';
 
 interface IPost{
+  _id: string;
+  title: string;
+  excerpt: string;
+  coverImage: string;
+  category: {
+    _id: string;
+    name: string;
+  }
+  tags: string[];
+  content: string;
+  slug: string;
+  tableOfContent: {
+    id: string;
+    level: number;
+    textContent: string;
+  }[]
+  author: {
+    fullname: {
+      firstname: string;
+      lastname: string;
+    }
+    profileImg: string;
+  }
+  readingTime: string;
+  status: "draft" | "published";
+  updatedAt: string;
+}
+
+interface IUpdatePost{
   title?: string;
   excerpt?: string;
   category?: string;
   tags?: string;
   readingTime?: string;
+  status?: "draft" | "published"
 }
 
 interface ICategory {
@@ -25,7 +54,6 @@ interface ICategory {
   name: string;
   description: string;
 }
-
 
 interface ITableOfContent{
   id: string;
@@ -38,14 +66,14 @@ export default function UpdatePost(){
   const navigate = useNavigate();
   const {postId} = useParams();
 
-  const { profile } = useSelector(state => state.user);
-
-  const [postData, setPostData] = useState<IPost>({});
+  const [post, setPost] = useState<IPost | null>(null);
+  const [postData, setPostData] = useState<IUpdatePost>({});
   const [content, setContent] = useState('');
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverImageURL, setCoverImageURL] = useState<string | null>(null);
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [items, setItems] = useState<TableOfContentDataItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -64,29 +92,27 @@ export default function UpdatePost(){
   },[]);
 
   useEffect(() => {
-    setPostData(curr => ({...curr, readingTime: calculateReadingTime(wordCount)}));
-  },[wordCount]);
-
-  useEffect(() => {
     axios
-    .get(
-      `${import.meta.env.VITE_BASE_URL}/post/fetch-posts?userId=${profile._id}&postId=${postId}`
+    .get(`${import.meta.env.VITE_BASE_URL}/post/preview?postId=${postId}`, 
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      }
     ).then((repsonse) => {
-      console.log(repsonse.data.data.posts[0]);
-      if(repsonse.data.data.posts && repsonse.data.data.posts[0]){
-        setPostData({
-          title: repsonse.data.data.posts[0].title,
-          excerpt: repsonse.data.data.posts[0].excerpt,
-          category: repsonse.data.data.posts[0].category,
-          tags: repsonse.data.data.posts[0].tags.join(' ')
-        });
-        setContent(repsonse.data.data.posts[0].content);
+      if(repsonse.data.data.post){
+        setPost(repsonse.data.data.post);
+        setContent(repsonse.data.data.post.content);
       }
     })
     .catch((error) => {
       console.log(error);
     })
   },[postId]);
+
+  useEffect(() => {
+    setPostData(curr => ({...curr, readingTime: calculateReadingTime(wordCount)}));
+  },[wordCount]);
 
   if(!editor){
     return <div>Loading...</div>
@@ -164,7 +190,11 @@ export default function UpdatePost(){
       return;
     }
 
-    if( postData.title && postData.title.length === 0){
+    if (Object.keys(postData).length === 0 && !coverImage) {
+      return;
+    }
+
+    if(postData.title && postData.title.length === 0){
       setError('Title must not be empty');
       return;
     }
@@ -194,19 +224,28 @@ export default function UpdatePost(){
 
     /* API Call */
     try {
-      const data = new FormData();
-      data.append('title', postData.title);
-      data.append('excerpt', postData.excerpt);
-      data.append('category', postData.category);
-      data.append('tags', postData.tags);
-      data.append('content', editor.getHTML());
-      data.append('status', 'draft');
-      if (coverImage) {
-        data.append('coverImage', coverImage);
-      }
+      const tableOfContent: ITableOfContent[] = [];
+      items.map(item => {
+        tableOfContent.push({
+          id: item.id,
+          level: item.updatedLevel,
+          textContent: item.textContent
+        })
+      });
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/post/create`,
+      const data = new FormData();
+      if(coverImage){ data.append('coverImage', coverImage)}
+      if(postData.title){ data.append('title', postData.title)}
+      if(postData.excerpt){ data.append('excerpt', postData.excerpt)}
+      if(postData.category){ data.append('category', postData.category)}
+      if(postData.status){ data.append('status', postData.status)}
+      if(postData.readingTime){ data.append('readingTime', postData.readingTime)}
+      if(postData.tags){ data.append('tags', JSON.stringify(postData.tags.split(' ')))}
+      data.append('content', editor.getHTML());
+      data.append('tableOfContent', JSON.stringify(tableOfContent));
+
+      const response = await axios.put(
+        `${import.meta.env.VITE_BASE_URL}/post/update-post/${post?._id}`,
         data,
         {
           headers: {
@@ -214,11 +253,16 @@ export default function UpdatePost(){
           }
         }
       );
-      navigate(`/blog/${response.data.data.post._id}`)
+      navigate(`/preview/${response.data.data.post._id}`)
       console.log(response.data);
     } catch (error) {
       console.log(error);
+      toast.error(
+        (axios.isAxiosError(error) && error.response?.data?.message) ||
+        "An error occurred while updating the post."
+      );
     }
+    setLoading(false);
   }
 
   return(
@@ -234,7 +278,7 @@ export default function UpdatePost(){
                 className="w-full h-10 p-2 flex text-2xl font-bold border rounded" 
                 placeholder="Enter your blog post title..."
                 type='text'
-                value={postData.title}
+                value={postData.title ?? post?.title ?? ""}
                 onChange={handleInputChange}
               />
             </div>
@@ -249,7 +293,7 @@ export default function UpdatePost(){
                 name='excerpt'
                 className="w-full p-2 text-sm border rounded" 
                 placeholder="Enter post excerpt..."
-                value={postData.excerpt}
+                value={postData.excerpt ?? post?.excerpt ?? ""}
                 onChange={handleInputChange}
               />
             </div>
@@ -261,7 +305,7 @@ export default function UpdatePost(){
                 <h3 className="text-2xl font-semibold">Cover Image</h3>
               </div>
               {
-                coverImageURL ? 
+                coverImageURL || post?.coverImage ? 
                 <div className="relative">
                   <X 
                     className="absolute top-1 right-1" 
@@ -271,7 +315,7 @@ export default function UpdatePost(){
                       setCoverImageURL(null);
                     }} 
                   />
-                  <img className="w-full" src={coverImageURL}/>
+                  <img className="w-full" src={coverImageURL ?? post?.coverImage ?? ""}/>
                 </div>
                 :
                 <div
@@ -309,17 +353,13 @@ export default function UpdatePost(){
                 </label>
                 <div className="relative">
                   <p 
-                    className="px-3 py-2 text-sm border rounded-md"
+                    className="w-full px-3 py-2 flex justify-between items-center text-sm border rounded-md"
                     onClick={() => {setCategoryMenuOpen(curr => !curr)}}
                     >
-                    {
-                      postData.category ?
-                        <span className="capitalize">
-                        {categories.find((cat) => cat._id === postData.category)?.name}
-                        </span>
-                      :
-                      <span className="text-muted-foreground">Select a Category</span>
-                    }
+                      <span className="capitalize">
+                      {categories.find((cat) => cat._id === (postData.category ?? post?.category._id))?.name}
+                      </span>
+                      <ChevronRight className={`transform ${categoryMenuOpen ? '-rotate-90' : 'rotate-90'}`} size={16}/>
                   </p>
                   
                   {
@@ -355,7 +395,7 @@ export default function UpdatePost(){
                   className="w-full px-3 py-2 text-sm border rounded-md"
                   placeholder="Enter tags seperated by commas"
                   type='text'
-                  value={postData.tags}
+                  value={postData.tags ?? post?.tags.join(' ')}
                   onChange={handleInputChange}
                 />
                 <p className="text-xs text-muted-foreground">Seperate tags with commas</p>
@@ -449,7 +489,20 @@ export default function UpdatePost(){
             {/* Publish Settings */}
             <div className="p-6 space-y-6 border rounded">     
               <h3 className="text-2xl font-semibold">Publish Settings</h3>
-              <p>Status:</p>
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">Status:</p>
+                <div className="relative px-2 py-1 flex-1 flex items-center justify-between capitalize text-sm border rounded" onClick={() => {setStatusMenuOpen(curr => !curr)}}>
+                  <span>{postData.status ?? post?.status}</span>
+                  <ChevronRight className={`transform ${statusMenuOpen ? '-rotate-90' : 'rotate-90'}`} size={16} />
+                  {
+                    statusMenuOpen &&
+                    <div className="w-full p-1 absolute top-full left-0 bg-white border rounded">
+                      <p className="px-2 py-1 border-b" onClick={() => {setPostData(curr => ({...curr, status: 'draft'}))}}>Draft</p>
+                      <p className="px-2 py-1" onClick={() => {setPostData(curr => ({...curr, status: 'published'}))}}>Published</p>
+                    </div>
+                  }
+                </div>
+              </div>
             </div>
 
             <div>
@@ -461,7 +514,7 @@ export default function UpdatePost(){
                 </p>
               }
 
-              <button className="w-full px-2 py-1 btn-1 rounded">
+              <button className="w-full px-2 py-1 btn-1 rounded disabled:opacity-60 disabled:cursor-not-allowed" onClick={handleUpdatePost} disabled={loading}>
                 <span>Update Post</span>
               </button>
             </div>

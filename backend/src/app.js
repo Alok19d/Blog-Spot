@@ -19,7 +19,8 @@ import commentRouter from './routes/comment.routes.js'
 import categoryRouter from './routes/category.routes.js'
 import viewRouter from './routes/view.routes.js'
 import bookmarkRouter from './routes/bookmark.routes.js'
-  
+import newsletterRouter from './routes/newsletter.routes.js'
+
 /* Routes Deceleration */
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/post', postRouter);
@@ -27,7 +28,7 @@ app.use('/api/v1/comment', commentRouter);
 app.use('/api/v1/category', categoryRouter);
 app.use('/api/v1/view', viewRouter);
 app.use('/api/v1/bookmark', bookmarkRouter);
-
+app.use('/api/v1/newsletter', newsletterRouter);
 
 /* Handles Error */
 app.use((err, req, res, next) => {

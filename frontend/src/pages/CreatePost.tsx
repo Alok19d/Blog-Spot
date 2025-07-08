@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Info, Save, Tag, X } from "lucide-react";
+import { ChevronRight, Info, Save, Tag, X } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane, faImage } from "@fortawesome/free-regular-svg-icons";
 import axios from "axios";
@@ -197,8 +197,7 @@ export default function CreatePost(){
           }
         }
       );
-      navigate(`/preview/${response.data.data.post._id}`)
-      console.log(response.data);
+      navigate(`/preview/${response.data.data.post._id}`);
     } catch (error) {
       console.log(error);
       toast.error(
@@ -302,9 +301,12 @@ export default function CreatePost(){
                     >
                     {
                       postData.category ?
-                        <span className="capitalize">
-                        {categories.find((cat) => cat._id === postData.category)?.name}
-                        </span>
+                        <div className="w-full flex justify-between items-center">
+                          <span className="capitalize">
+                          {categories.find((cat) => cat._id === postData.category)?.name}
+                          </span>
+                          <ChevronRight className={`transform ${categoryMenuOpen ? '-rotate-90' : 'rotate-90'}`} size={16}/>
+                        </div>
                       :
                       <span className="text-muted-foreground">Select a Category</span>
                     }
