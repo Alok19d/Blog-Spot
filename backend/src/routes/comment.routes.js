@@ -1,18 +1,22 @@
 import { Router } from 'express';
 import { authUser } from "../middlewares/auth.middleware.js";
-import { createComment, getPostComments, likeComment, editComment } from '../controllers/comment.controller.js';
+import { createComment, getComments, getReplies, likedComments,  toggleLike, editComment, deleteComment } from '../controllers/comment.controller.js';
 
 const router = Router();
 
 router.post('/create', authUser, createComment);
 
-router.get('/getPostComments/:postId', getPostComments);
+router.get('/post/:postId', getComments);
 
-router.put('/likeComment/:commentId', authUser, likeComment);
+router.get('/replies/:commentId', getReplies);
 
-router.put('/editComment/:commentId', authUser, editComment);
+router.get('/likes/:postId', authUser, likedComments);
 
-// router.delete('/deleteComment/:commentId', authUser, deleteComment);
+router.put('/like/:commentId', authUser, toggleLike);
+
+router.put('/edit/:commentId', authUser, editComment);
+
+router.delete('/delete/:commentId', authUser, deleteComment);
 
 
 export default router;

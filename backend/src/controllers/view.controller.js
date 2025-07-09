@@ -15,7 +15,7 @@ export const likes = async (req, res) => {
       data: {
         posts: postIds
       },
-      message: "Post like toggled successfully.",
+      message: "Liked Posts fetched successfully.",
     });
   } catch (error) {
     console.log(error);

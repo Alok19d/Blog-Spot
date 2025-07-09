@@ -5,6 +5,7 @@ import { Bookmark, CalendarDays, Clock, Heart, MessageSquare, Share2 } from "luc
 import axios from 'axios';
 import DomPurify from 'dompurify';
 import {toast, ToastContainer} from 'react-toastify';
+import Comment from "../components/Comment";
 
 interface IPost{
   _id: string;
@@ -29,6 +30,7 @@ interface IPost{
       lastname: string;
     }
     profileImg?: string;
+    bio: string;
   }
   readingTime: string;
   status: "draft" | "published";
@@ -38,16 +40,28 @@ interface IPost{
   commentCount?: number;
 }
 
-interface IComment{
-
-}
-
 interface IRelatedPosts{
   _id: string;
   title: string;
   slug: string;
   coverImage?: string;
   readingTime: string;
+}
+
+interface IComment{
+  _id: string;
+  content: string;
+  user: {
+    _id: string;
+    fullname: {
+      firstname: string;
+      lastname: string;
+    }
+    profileImg: string;
+  }
+  replyCount: number;
+  likeCount: number;
+  createdAt: string;
 }
 
 export default function Blog(){
@@ -62,8 +76,10 @@ export default function Blog(){
   const [bookmark, setBookmark] = useState(false);
   const [showShareLink, setShowShareLink] = useState(false);
   const [comment, setComment] = useState('');
-  const [comments, setComments] = useState([]);
+  const [comments, setComments] = useState<IComment[]>([]);
+  const [likedComments, setLikedComments] = useState<string[]>([]);
   const [relatedPosts, setRelatedPosts] = useState<IRelatedPosts[]>([]);
+  const [showMore, setShowMore] = useState(true);
 
   const { profile } = useSelector(state => state.user);
 
@@ -118,15 +134,22 @@ export default function Blog(){
   async function fetchComments(){
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/comment/getPostComments/${post?._id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
+        `${import.meta.env.VITE_BASE_URL}/comment/post/${post?._id}`
       );
-      console.log(response.data.data.comments);
-      // setComments(response.data.data.comments);
+
+      setPost(curr => {
+        if (!curr) return curr;
+        return {
+          ...curr,
+          commentCount: response.data.data.totalComments,
+        };
+      });
+
+      if(response.data.data.comments.length < 5){
+        setShowMore(false);
+      }
+      
+      setComments(response.data.data.comments);
     } catch (error) {
       console.log(error);
     }
@@ -135,14 +158,25 @@ export default function Blog(){
   async function fetchRelatedPosts(){
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/post/related-posts?postId=${post?._id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
+        `${import.meta.env.VITE_BASE_URL}/post/related-posts?postId=${post?._id}`
       );
       setRelatedPosts(response.data.data.posts);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function fetchLikedComments(){
+    if(!profile) return;
+
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/comment/likes/${post?._id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      setLikedComments(response.data.data.comments);
     } catch (error) {
       console.log(error);
     }
@@ -169,6 +203,7 @@ export default function Blog(){
       fetchViewsAndLikes();
       fetchComments();
       fetchRelatedPosts();
+      fetchLikedComments();
     }
   },[post?._id]);
 
@@ -231,6 +266,10 @@ export default function Blog(){
       setLike(response.data.data.isLiked);
     } catch (error) {
       console.log(error);
+      toast.error(
+        (axios.isAxiosError(error) && error.response?.data?.message) ||
+        "An error occurred while toggling post like."
+      );
     }
   }
 
@@ -241,10 +280,32 @@ export default function Blog(){
       toast.success('Share Link Copied to Clipboard');
     } catch (err) {
       console.error('Failed to copy text: ', err);
+      toast.error('Failed to copy text');
     }
   }
 
-  // Done
+  async function loadMoreComments(){
+    const startIndex = comments.length;
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_URL}/comment/post/${post?._id}?startIndex=${startIndex}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+
+      if(response.data.data.comments.length < 5){
+        setShowMore(false);
+      }
+
+      setComments(prev => [...prev, ...response.data.data.comments]);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async function postComment(){
     try {
       const response = await axios.post(
@@ -260,48 +321,14 @@ export default function Blog(){
         }
       );
       setComment('');
-      // setComments(curr => [response.data.data.comment, ...curr]);
-      console.log(response.data.data.comment);
+      setComments(curr => [response.data.data.comment, ...curr]);
     } catch (error) {
       console.log(error);
-    }
-  }
-
-  async function likeComment(commentId: string) {
-    if(!profile){
-      return;
-    }
-
-    try {
-      const response = await axios.put(
-        `${import.meta.env.VITE_BASE_URL}/comment/likeComment/${commentId}`,
-        {},
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }
+      toast.error(
+        (axios.isAxiosError(error) && error.response?.data?.message) ||
+        "An error occurred while posting Comment."
       );
-      setComments(comments.map((comment) => 
-        comment._id === commentId
-          ? {
-              ...comment,
-              likes: response.data.data.comment.likes,
-              numberOfLikes: response.data.data.comment.numberOfLikes
-            }
-          : comment
-      ));
-    } catch (error) {
-      console.log(error);
     }
-  }
-
-  async function editComment(commentId: string) {
-    
-  }
-
-  async function deleteComment(commentId: string) {
-
   }
 
   return (
@@ -431,7 +458,7 @@ export default function Blog(){
 
             {/* Comments */}
             <div className="mt-12">
-              <h3 className="text-2xl font-bold mb-6">Comments(3)</h3>
+              <h3 className="text-2xl font-bold mb-6">Comments({post?.commentCount})</h3>
               {
                 profile &&
                 <div className="p-6 space-y-3 border rounded">
@@ -461,63 +488,16 @@ export default function Blog(){
                 {
                   comments?.map((comment) => {
                     return (
-                      <div key={comment._id} className="flex space-x-4">
-                        <div className="w-10 h-10 aspect-square bg-muted rounded-full overflow-hidden">
-                          {
-                            comment.userId.profileImg 
-                            ?
-                            <img className="object-cover rounded-full" src={comment.userId.profileImg} alt='profile-img' />
-                            :
-                            <span className="w-full aspect-square flex items-center justify-center text-sm text-white font-bold capitalize bg-gray-700 rounded-full">{comment.userId.fullname.firstname[0]}</span>
-                          }
-                        </div>
-                        <div className="flex-1">
-                          <div className="p-4 bg-muted rounded-lg">
-                            <div className="mb-1 flex justify-between">
-                              <h4 className="font-medium">{comment.userId.fullname.firstname + ' ' + comment.userId.fullname.lastname}</h4>
-                              <p className="text-sm text-muted-foreground">{new Date(comment.createdAt).toLocaleDateString()}</p>
-                            </div>
-                            <p className="text-sm">{comment.content}</p>
-                          </div>
-                          <div className="flex items-center space-x-4 mt-2">
-                            <button 
-                              className="h-9 px-3 space-x-2 flex items-center text-sm hover:bg-muted rounded-lg"
-                              onClick={()=> {likeComment(comment._id)}}
-                            >
-                                {
-                                comment.likes.includes(profile?._id) ?
-                                  <Heart size={16} color="red" fill="red" />
-                                  :
-                                  <Heart size={16} />
-                                }
-                              <span className="font-medium">{comment.numberOfLikes}</span>
-                            </button>
-                            <button className="h-9 px-3 space-x-2 flex items-center text-sm font-medium hover:bg-muted rounded-lg">
-                              Reply
-                            </button>
-                            {
-                              comment.userId._id === profile?._id &&
-                              <div className="flex space-x-4">
-                                <button 
-                                  className="h-9 px-3 space-x-2 flex items-center text-sm font-medium hover:bg-muted rounded-lg"
-                                  onClick={() => {editComment(comment._id)}}
-                                  >
-                                  Edit
-                                </button>
-                                <button 
-                                  className="h-9 px-3 space-x-2 flex items-center text-sm font-medium hover:bg-muted rounded-lg"
-                                  onClick={() => {deleteComment(comment._id)}}
-                                  >
-                                  Delete
-                                </button>
-                              </div>
-                            }
-                          </div>
-                        </div>
-                      </div>
+                      <Comment key={comment._id} toast={toast} postId={post?._id} comment={comment} setComments={setComments} likedComments={likedComments} setLikedComments={setLikedComments} />
                     )
                   })
                 }
+                <div className="flex justify-center">
+                  {
+                    showMore &&
+                    <button className="px-3 py-1 btn-1 rounded hover:opacity-70" onClick={loadMoreComments}>Load Older Comments</button>
+                  }
+                </div>
               </div>
             </div>
           </div>
