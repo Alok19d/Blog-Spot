@@ -15,11 +15,12 @@ app.use(urlencoded({extended: true}));
 /* Routes Import */
 import userRouter from './routes/user.routes.js';
 import postRouter from './routes/post.routes.js';
-import commentRouter from './routes/comment.routes.js'
-import categoryRouter from './routes/category.routes.js'
-import viewRouter from './routes/view.routes.js'
-import bookmarkRouter from './routes/bookmark.routes.js'
-import newsletterRouter from './routes/newsletter.routes.js'
+import commentRouter from './routes/comment.routes.js';
+import categoryRouter from './routes/category.routes.js';
+import viewRouter from './routes/view.routes.js';
+import bookmarkRouter from './routes/bookmark.routes.js';
+import newsletterRouter from './routes/newsletter.routes.js';
+import roomRouter from './routes/room.routes.js';
 
 /* Routes Deceleration */
 app.use('/api/v1/user', userRouter);
@@ -29,6 +30,7 @@ app.use('/api/v1/category', categoryRouter);
 app.use('/api/v1/view', viewRouter);
 app.use('/api/v1/bookmark', bookmarkRouter);
 app.use('/api/v1/newsletter', newsletterRouter);
+app.use('/api/v1/room', roomRouter);
 
 /* Handles Error */
 app.use((err, req, res, next) => {

@@ -12,6 +12,8 @@ import CreatePost from './pages/CreatePost';
 import Blog from './pages/Blog';
 import UpdatePost from './pages/UpdatePost';
 import Preview from './pages/Preview';
+import Search from './pages/Search';
+import Room from './pages/Room';
 
 export default function App(){
   return (
@@ -30,6 +32,8 @@ export default function App(){
         </Route>
         <Route path='/preview/:postId' element={<Preview />} />
         <Route path='/blog/:postSlug' element={<Blog />} />
+        <Route path='/search' element={<Search />} />
+        <Route path='/room/:roomId' element={<Room />} />
       </Routes>
       <Footer />
     </>

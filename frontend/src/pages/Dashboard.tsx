@@ -4,17 +4,28 @@ import { useSelector } from "react-redux";
 import { CirclePlus } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faFileLines, faHeart, faComment } from "@fortawesome/free-regular-svg-icons";
-import DashPosts from "../components/DashPosts";
 import axios from "axios";
 import { toast, ToastContainer } from 'react-toastify';
+import DashPosts from "../components/DashPosts";
+import DashComments from "../components/DashComments";
+
+interface IDashboardData {
+  totalViews: number;
+  viewsThisMonth: number;
+  totalPosts: number;
+  publishedPosts: number;
+  totalLikes: number;
+  likesThisWeek: number;
+  totalComments: number;
+  commentsThisWeek: number; 
+}
 
 export default function Dashboard(){
 
   const { profile } = useSelector(state => state.user);
   
   const [tab, setTab] = useState('posts');
-  const [userPosts, setUserPosts] = useState([]);
-  const [dashboardData, setDashboardData] = useState({});
+  const [dashboardData, setDashboardData] = useState<IDashboardData | null>(null);
 
   async function fetchDashboardData(){
     try {
@@ -32,25 +43,8 @@ export default function Dashboard(){
     }
   }
 
-  async function fetchUserPosts(){
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_BASE_URL}/post/my-posts`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
-      setUserPosts(response.data.data.posts);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
   useEffect(() => {
     fetchDashboardData();
-    fetchUserPosts();
   },[])
 
   return (
@@ -73,8 +67,8 @@ export default function Dashboard(){
                 <span className="text-sm font-medium">Total Posts</span>
                 <FontAwesomeIcon className="text-muted-foreground" icon={faFileLines}/>
               </div>
-              <p className="font-bold text-2xl">{dashboardData.totalPosts ? dashboardData.totalPosts : 0}</p>
-              <p className="text-xs text-muted-foreground">{dashboardData.publishedPosts ? dashboardData.publishedPosts : 0} published</p>
+              <p className="font-bold text-2xl">{dashboardData?.totalPosts ? dashboardData?.totalPosts : 0}</p>
+              <p className="text-xs text-muted-foreground">{dashboardData?.publishedPosts ? dashboardData?.publishedPosts : 0} published</p>
             </div>
             <div className="p-6 border rounded-md">
               <div className=" mb-2 flex justify-between">
@@ -89,8 +83,8 @@ export default function Dashboard(){
                 <span className="text-sm font-medium">Comments</span>
                 <FontAwesomeIcon className="text-muted-foreground" icon={faComment}/>
               </div>
-              <p className="font-bold text-2xl">{dashboardData.totalComments}</p>
-              <p className="text-xs text-muted-foreground">+{dashboardData.commentsThisWeek} this week</p>
+              <p className="font-bold text-2xl">{dashboardData?.totalComments}</p>
+              <p className="text-xs text-muted-foreground">+{dashboardData?.commentsThisWeek} this week</p>
             </div>
           </div>
         </div>
@@ -133,7 +127,9 @@ export default function Dashboard(){
           </div>
           {
             tab === 'posts' ?
-            <DashPosts userPosts={userPosts} setUserPosts={setUserPosts} toast={toast} /> :
+            <DashPosts toast={toast} /> :
+            tab === 'comments' ?
+            <DashComments toast={toast} /> :
             <div></div>
           }
         </div>

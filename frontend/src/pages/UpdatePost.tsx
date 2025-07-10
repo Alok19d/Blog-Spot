@@ -64,7 +64,7 @@ interface ITableOfContent{
 export default function UpdatePost(){
 
   const navigate = useNavigate();
-  const {postId} = useParams();
+  const { postId } = useParams();
 
   const [post, setPost] = useState<IPost | null>(null);
   const [postData, setPostData] = useState<IUpdatePost>({});
@@ -80,34 +80,36 @@ export default function UpdatePost(){
 
   const { editor, wordCount, characterCount } = useCustomEditor({ setItems, initialContent: content }); 
 
-  useEffect(() => {
-    axios
-    .get(`${import.meta.env.VITE_BASE_URL}/category`)
-    .then((response) => {
+  async function fetchCategories(){
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/category`);
       setCategories(response.data.data.categories);
-    })  
-    .catch((error) => {
+    } catch (error) {
       console.log(error);
-    })
-  },[]);
+    }
+  }
 
-  useEffect(() => {
-    axios
-    .get(`${import.meta.env.VITE_BASE_URL}/post/preview?postId=${postId}`, 
+  async function fetchPost(){
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/post/preview?postId=${postId}`, 
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
-      }
-    ).then((repsonse) => {
-      if(repsonse.data.data.post){
-        setPost(repsonse.data.data.post);
-        setContent(repsonse.data.data.post.content);
-      }
-    })
-    .catch((error) => {
+      });
+      setPost(response.data.data.post);
+      setContent(response.data.data.post.content);
+    } catch (error) {
       console.log(error);
-    })
+    }
+  }
+
+  useEffect(() => {
+    fetchCategories();
+  },[]);
+
+  useEffect(() => {
+    fetchPost();
   },[postId]);
 
   useEffect(() => {
@@ -133,7 +135,7 @@ export default function UpdatePost(){
     }
   }
 
-  function formatReadingTime(minutes: number, seconds: number) {
+  function formatReadingTime(minutes: number, seconds: number){
     if (minutes === 0 && seconds < 30) {
       return "< 1 min";
     } else if (minutes === 0) {
@@ -263,6 +265,26 @@ export default function UpdatePost(){
       );
     }
     setLoading(false);
+  }
+
+  async function startCollaboration(){
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/room/create`,
+        {
+          postId
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      toast.success(response.data.data.message);
+      navigate(`/room/${response.data.data.roomId}`);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   return(
@@ -395,7 +417,7 @@ export default function UpdatePost(){
                   className="w-full px-3 py-2 text-sm border rounded-md"
                   placeholder="Enter tags seperated by commas"
                   type='text'
-                  value={postData.tags ?? post?.tags.join(' ')}
+                  value={postData.tags ?? post?.tags.join(' ') ?? ""}
                   onChange={handleInputChange}
                 />
                 <p className="text-xs text-muted-foreground">Seperate tags with commas</p>
@@ -413,11 +435,9 @@ export default function UpdatePost(){
           {/* Sidebar */}
           <div className="space-y-6">
               
-            <button className="w-full px-2 py-1 btn-2 rounded">
-              <div className="space-x-2 flex items-center justify-center">
-                <UserRoundPen size={18} />
-                <span>Start Collaboration</span>
-              </div>  
+            <button className="w-full px-2 py-1 flex items-center justify-center gap-2 btn-2 rounded" onClick={startCollaboration}>
+              <UserRoundPen size={18} />
+              <span>Start Collaboration</span>
             </button>
 
             {/* Table of Contents */}
