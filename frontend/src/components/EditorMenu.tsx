@@ -5,9 +5,10 @@ import { Undo2, Redo2, Heading, Heading1, Heading2, Heading3, Heading4, Heading5
 
 interface EditorMenuProps {
   editor: Editor | null;
+  isCollaborating: boolean
 }
 
-export default function EditorMenu({editor}: EditorMenuProps){
+export default function EditorMenu({editor, isCollaborating}: EditorMenuProps){
 
   const [showHeading, setShowHeading] = useState(false);
   const [showList, setShowList] = useState(false);
@@ -95,11 +96,7 @@ export default function EditorMenu({editor}: EditorMenuProps){
             className='px-2 py-1 hover:bg-muted rounded'
             onClick={() => editor.chain().focus().undo().run()}
             disabled={
-              !editor.can()
-              .chain()
-              .focus()
-              .undo()
-              .run()
+              !isCollaborating || !editor.can().undo()
             }
           >
             <Undo2 size={20} />
@@ -108,13 +105,9 @@ export default function EditorMenu({editor}: EditorMenuProps){
           {/* Redo Function */}
           <button
             className='px-2 py-1 hover:bg-muted rounded disabled:opacity-60 disabled:cursor-not-allowed'
-            onClick={() => editor.chain().focus().redo().run()}
+            onClick={() => editor?.chain().focus().redo().run()}
             disabled={
-              !editor.can()
-              .chain()
-              .focus()
-              .redo()
-              .run()
+              !isCollaborating || !editor.can().redo()
             }
           >
             <Redo2 size={20} />

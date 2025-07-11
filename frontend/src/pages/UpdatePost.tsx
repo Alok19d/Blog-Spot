@@ -3,12 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ChevronRight, Info, Tag, UserRoundPen, X } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faImage } from "@fortawesome/free-regular-svg-icons";
-import axios from "axios";
-import { EditorContent } from "@tiptap/react";
+import { Editor } from '@tiptap/react';
+import TextEditor from "../components/TextEditor";
 import { TableOfContentDataItem } from '@tiptap/extension-table-of-contents';
-import useCustomEditor from "../hooks/useCustomEditor";
-import EditorMenu from "../components/EditorMenu";
 import { TextSelection } from '@tiptap/pm/state';
+import axios from "axios";
 import {toast, ToastContainer} from 'react-toastify';
 
 interface IPost{
@@ -74,11 +73,12 @@ export default function UpdatePost(){
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [editor, setEditor] = useState<Editor | null>(null);
+  const [wordCount, setWordCount] = useState(0);
+  const [characterCount, setCharacterCount] = useState(0);
   const [items, setItems] = useState<TableOfContentDataItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const { editor, wordCount, characterCount } = useCustomEditor({ setItems, initialContent: content }); 
 
   async function fetchCategories(){
     try {
@@ -115,10 +115,6 @@ export default function UpdatePost(){
   useEffect(() => {
     setPostData(curr => ({...curr, readingTime: calculateReadingTime(wordCount)}));
   },[wordCount]);
-
-  if(!editor){
-    return <div>Loading...</div>
-  }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>){
     setPostData({...postData, [e.target.name]: e.target.value});
@@ -427,8 +423,7 @@ export default function UpdatePost(){
             {/* Content */}
             <div className="p-6 border rounded">
               <h3 className="mb-6 text-2xl font-semibold">Content</h3>
-              <EditorMenu editor={editor} />
-              <EditorContent editor={editor} />
+              <TextEditor initialContent={content} setEditor={setEditor} setWordCount={setWordCount} setCharacterCount={setCharacterCount} setItems={setItems} />
             </div>
           </div>
 

@@ -1,14 +1,16 @@
 import { Router } from 'express';
-import { createRoom, addUser, joinRoom } from '../controllers/room.controller.js';
+import { createRoom, addUser, removeUser, deleteRoom } from '../controllers/room.controller.js';
 import { authUser } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
 router.post('/create', authUser, createRoom);
 
-router.post('/add-user', authUser, addUser);
+router.put('/add', authUser, addUser);
 
-router.get('/join/:roomId', authUser, joinRoom);
+router.put('/remove', authUser, removeUser);
+
+router.delete('/delete/:roomId', authUser, deleteRoom);
 
 
 export default router;

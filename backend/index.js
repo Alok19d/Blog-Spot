@@ -1,18 +1,25 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import http from 'node:http';
 import { app } from './src/app.js';
 import connectDB from './src/config/db.js';
+import { initializeSocket } from './socket.js';
 
 connectDB()
 .then(() => {
-    app.on('error', (error) => {
+    const PORT = process.env.PORT || 8000;
+    const server = http.createServer(app);
+
+    initializeSocket(server);
+
+    server.on('error', (error) => {
         console.log(`ERROR: ${error}`);
         throw error;
     });
 
-    app.listen(process.env.PORT || 8000,() => {
-        console.log(`Server is running at PORT: ${process.env.PORT}`);
+    server.listen(PORT,() => {
+        console.log(`Server is running at PORT: ${PORT}`);
     });
 })
 .catch((error) => {

@@ -4,7 +4,8 @@ const roomSchema = new mongoose.Schema(
   {
     roomId: {
       type: String,
-      required: true
+      required: true,
+      unique: true
     },
     postId: {
       type: mongoose.Schema.Types.ObjectId,

@@ -1,17 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect} from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronRight, Info, Tag, UserRoundPen, X } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown, faPenToSquare, faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { faImage } from "@fortawesome/free-regular-svg-icons"
-import axios from "axios";
-import { EditorContent } from "@tiptap/react";
+import { Editor } from '@tiptap/react';
+import TextEditor from "../components/TextEditor";
 import { TableOfContentDataItem } from '@tiptap/extension-table-of-contents';
-import useCustomEditor from "../hooks/useCustomEditor";
-import EditorMenu from "../components/EditorMenu";
 import { TextSelection } from '@tiptap/pm/state';
+import axios from "axios";
 import { ToastContainer, toast } from 'react-toastify';
+import { getRandomColor } from "../utils/utils";
 
 interface IPost{
   _id: string;
@@ -72,11 +72,14 @@ export default function Room(){
   const [categories, setCategories] = useState<ICategory[]>([]);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+  const [editor, setEditor] = useState<Editor | null>(null);
+  const [wordCount, setWordCount] = useState(0);
+  const [characterCount, setCharacterCount] = useState(0);
+  const [userInfo, setUserInfo] = useState({ name: 'Anonymous', color: '#f783ac' });
   const [items, setItems] = useState<TableOfContentDataItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const {editor, wordCount, characterCount} = useCustomEditor({setItems, initialContent: content, roomId, }); 
 
   async function fetchCategories(){
     try {
@@ -88,16 +91,17 @@ export default function Room(){
   }
 
   useEffect(() => {
+    const color = getRandomColor();
     fetchCategories();
+    setUserInfo({
+      name: profile?.fullname.firstname,
+      color
+    });
   },[]);
 
   useEffect(() => {
     setPostData(curr => ({...curr, readingTime: calculateReadingTime(wordCount)}));
   },[wordCount]);
-
-  if(!editor){
-    return <div>Loading...</div>
-  }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>){
     setPostData({...postData, [e.target.name]: e.target.value});
@@ -306,8 +310,7 @@ export default function Room(){
             {/* Content */}
             <div className="p-6 border rounded">
               <h3 className="mb-6 text-2xl font-semibold">Content</h3>
-              <EditorMenu editor={editor} />
-              <EditorContent editor={editor} />
+              <TextEditor initialContent={content} setEditor={setEditor} setWordCount={setWordCount} setCharacterCount={setCharacterCount} setItems={setItems} roomId={roomId} userInfo={userInfo} />
             </div>
           </div>
 
