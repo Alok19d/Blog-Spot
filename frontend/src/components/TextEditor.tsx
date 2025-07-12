@@ -52,7 +52,8 @@ export default function TextEditor({
   const [provider, setProvider] = useState<WebsocketProvider | null>(null);
 
   useEffect(() => {
-    let ydoc, yProvider;
+    let ydoc: Y.Doc | null = null;
+    let yProvider: WebsocketProvider | null = null;
     if (roomId ) {
       ydoc = new Y.Doc();
       yProvider = new WebsocketProvider(`ws://localhost:3000/${roomId}?token=${localStorage.getItem('token')}`, '', ydoc);

@@ -6,7 +6,7 @@ import PostModel from '../models/post.model.js';
 
 export const createRoom = async(req, res) => {
   try {
-    const { postId } = req.body;
+    const { postId, initialContent } = req.body;
     if(!postId){
       res
       .status(400)
@@ -66,7 +66,8 @@ export const createRoom = async(req, res) => {
     const room = await RoomModel.create({
       admin: req.userId,
       roomId,
-      postId
+      postId,
+      initialContent: initialContent || post.content
     });
 
     res
@@ -175,6 +176,62 @@ export const addUser = async(req, res) => {
       message: "Server error: Couldn't add user to room.",
       error
     });
+  }
+}
+
+export const getRoomDetails = async(req, res) => {
+  try {
+    const { roomId } = req.params;
+
+    /* Checking if either User is admin or a member of Room */
+    const room = await RoomModel.findOne({
+      roomId
+    })
+    .populate('admin', 'fullname profileImg')
+    .populate('users', 'fullname profileImg')
+    .populate('postId', 'title excerpt coverImage category tags status');
+
+    if(!room){
+      res
+      .status(404)
+      .json({
+        success: false,
+        message: 'Room not found.'
+      })
+      return;  
+    }
+
+    const isAdmin = room.admin._id.toString() === req.userId.toString();
+    const isMember = room.users.some(user => user._id.toString() === req.userId.toString());
+
+    if(!isAdmin && !isMember){
+      res
+      .status(401)
+      .json({
+        success: false,
+        message: 'Unauthorized Request.'
+      })
+      return;  
+    }
+    
+    res
+    .status(200)
+    .json({
+      success: true,
+      data: {
+        room
+      },
+      message: 'Room details fetched successfully.'
+    })
+  } catch (error) {
+    console.log(error);
+    res
+    .status(500)
+    .json({
+      success: false,
+      message: 'Server error: Unable to get room details.',
+      error
+    })
   }
 }
 

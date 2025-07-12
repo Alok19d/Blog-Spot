@@ -173,7 +173,7 @@ export default function UpdatePost(){
       editor.view.focus();
 
       if (history.pushState) { // eslint-disable-line
-        history.pushState(null, null, `#${id}`) // eslint-disable-line
+        history.pushState(null, '', `#${id}`) // eslint-disable-line
       }
 
       window.scrollTo({
@@ -264,11 +264,19 @@ export default function UpdatePost(){
   }
 
   async function startCollaboration(){
+    if(!editor){
+      toast.success('Please wait to load the editor')
+      return;
+    }
+
     try {
+      const currentContent = editor.getHTML();
+      
       const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/room/create`,
         {
-          postId
+          postId,
+          initialContent: currentContent
         },
         {
           headers: {
@@ -280,6 +288,10 @@ export default function UpdatePost(){
       navigate(`/room/${response.data.data.roomId}`);
     } catch (error) {
       console.log(error);
+      toast.error(
+        (axios.isAxiosError(error) && error.response?.data?.message) ||
+        "An error occurred while starting collaboration."
+      );
     }
   }
 
