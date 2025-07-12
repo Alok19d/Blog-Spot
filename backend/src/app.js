@@ -1,7 +1,9 @@
-import express, { urlencoded } from 'express';
+import express from 'express';
 import cors from 'cors';
+import path from 'node:path';
 
 const app = express();
+const __dirname = path.resolve();
 
 app.use(cors({
   origin: 'http://localhost:5173',
@@ -9,7 +11,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use(urlencoded({extended: true}));
+app.use(express.urlencoded({extended: true}));
 
 
 /* Routes Import */
@@ -31,6 +33,12 @@ app.use('/api/v1/view', viewRouter);
 app.use('/api/v1/bookmark', bookmarkRouter);
 app.use('/api/v1/newsletter', newsletterRouter);
 app.use('/api/v1/room', roomRouter);
+
+app.use(express.static(path.join(__dirname, '/frontend/dist')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+});
 
 /* Handles Error */
 app.use((err, req, res, next) => {
