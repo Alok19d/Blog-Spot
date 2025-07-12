@@ -1,0 +1,23 @@
+{
+  "name": "blog-spot",
+  "version": "1.0.0",
+  "description": "Blog Spot is a comprehensive full-stack web application that revolutionizes the blogging experience by combining traditional content creation with cutting-edge real-time collaboration features. Built with modern technologies including React 19, Node.js, and MongoDB, it offers a complete solution for both individual bloggers and collaborative content teams.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node backend/index.js",
+    "start": "node backend/index.js",
+    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alok19d/Blog-Spot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Alok19d/Blog-Spot/issues"
+  },
+  "homepage": "https://github.com/Alok19d/Blog-Spot#readme"
+}

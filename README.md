@@ -1,6 +1,6 @@
 # Blog Spot
 
-A full-stack modern blog application featuring collaborative editing, user authentication, image uploads, and real-time interactions.
+Blog Spot is a comprehensive full-stack web application that revolutionizes the blogging experience by combining traditional content creation with cutting-edge real-time collaboration features. Built with modern technologies including React 19, Node.js, and MongoDB, it offers a complete solution for both individual bloggers and collaborative content teams.
 
 ## Features
 
@@ -9,15 +9,12 @@ A full-stack modern blog application featuring collaborative editing, user authe
 - **OAuth Integration**: Google OAuth authentication for seamless login
 - **Password Recovery**: Forgot password functionality with email reset
 - **Profile Management**: Update profile information, avatar, and password
-- **Account Deletion**: Secure account removal with data cleanup
 
 ### ✍️ Content Creation & Management
 - **Rich Text Editor**: Advanced Tiptap editor with collaborative features
 - **Real-time Collaboration**: Multiple users can edit posts simultaneously using Yjs
-- **Image Uploads**: Cloudinary integration for cover images and inline content
 - **Post Categories**: Organize content with customizable categories
 - **Draft System**: Save and preview posts before publishing
-- **Post Management**: Create, update, delete, and manage your blog posts
 
 ### 💬 Social Features
 - **Comments System**: Nested comments with replies and threading
@@ -43,16 +40,6 @@ A full-stack modern blog application featuring collaborative editing, user authe
 - **Related Posts**: AI-powered content recommendations
 - **Featured Posts**: Highlighted content showcase
 - **Category Filtering**: Browse content by categories
-
-### 📧 Newsletter Integration
-- **Email Subscriptions**: Newsletter signup functionality
-- **Content Updates**: Keep subscribers informed about new posts
-
-### 🎨 Modern UI/UX
-- **Responsive Design**: Mobile-first responsive layout
-- **Dark/Light Mode**: Theme customization (if implemented)
-- **Modern Interface**: Clean, intuitive user experience
-- **Real-time Updates**: Live notifications and updates
 
 ## Tech Stack
 
