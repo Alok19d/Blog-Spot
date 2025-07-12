@@ -56,7 +56,7 @@ export default function TextEditor({
     let yProvider: WebsocketProvider | null = null;
     if (roomId ) {
       ydoc = new Y.Doc();
-      yProvider = new WebsocketProvider(`ws://localhost:3000/${roomId}?token=${localStorage.getItem('token')}`, '', ydoc);
+      yProvider = new WebsocketProvider(`${import.meta.env.VITE_WS_URL}/${roomId}?token=${localStorage.getItem('token')}`, '', ydoc);
 
       setDoc(ydoc);
       setProvider(yProvider);
