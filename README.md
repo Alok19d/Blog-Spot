@@ -102,8 +102,6 @@ Blog Spot is a comprehensive full-stack web application that revolutionizes the 
       "react-toastify": "^11.0.5",
       "redux-persist": "^6.0.0",
       "tailwindcss": "^4.0.14",
-      "y-prosemirror": "^1.3.6",
-      "y-protocols": "^1.0.6",
       "y-websocket": "^3.0.0",
       "yjs": "^13.6.27"
    }
